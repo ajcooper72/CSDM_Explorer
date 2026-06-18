@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_documentation element="populated_classes" label="Populated Classes" language="en" table="x_147805_csdmviz_scan_result">
+        <sys_documentation action="INSERT_OR_UPDATE">
+            <element>populated_classes</element>
+            <help/>
+            <hint/>
+            <label>Populated Classes</label>
+            <language>en</language>
+            <name>x_147805_csdmviz_scan_result</name>
+            <plural>Populated Classes</plural>
+            <sys_class_name>sys_documentation</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2026-05-18 06:52:47</sys_created_on>
+            <sys_id>220f36a783740350c07713e0deaad307</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>Populated Classes</sys_name>
+            <sys_package display_value="CSDMViz" source="x_147805_csdmviz">1c9af66f83340350c07713e0deaad3c3</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="CSDMViz">1c9af66f83340350c07713e0deaad3c3</sys_scope>
+            <sys_update_name>sys_documentation_x_147805_csdmviz_scan_result_populated_classes_en</sys_update_name>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2026-05-18 06:52:47</sys_updated_on>
+            <url/>
+            <url_target/>
+        </sys_documentation>
+    </sys_documentation>
+</record_update>

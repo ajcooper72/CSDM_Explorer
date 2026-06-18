@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_documentation element="relationship_issues" label="Relationship Issues" language="en" table="x_147805_csdmviz_scan_result">
+        <sys_documentation action="INSERT_OR_UPDATE">
+            <element>relationship_issues</element>
+            <help/>
+            <hint/>
+            <label>Relationship Issues</label>
+            <language>en</language>
+            <name>x_147805_csdmviz_scan_result</name>
+            <plural>Relationship Issues</plural>
+            <sys_class_name>sys_documentation</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2026-05-18 06:52:47</sys_created_on>
+            <sys_id>a60f36a783740350c07713e0deaad30e</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>Relationship Issues</sys_name>
+            <sys_package display_value="CSDMViz" source="x_147805_csdmviz">1c9af66f83340350c07713e0deaad3c3</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="CSDMViz">1c9af66f83340350c07713e0deaad3c3</sys_scope>
+            <sys_update_name>sys_documentation_x_147805_csdmviz_scan_result_relationship_issues_en</sys_update_name>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2026-05-18 06:52:47</sys_updated_on>
+            <url/>
+            <url_target/>
+        </sys_documentation>
+    </sys_documentation>
+</record_update>

@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_operation">
+    <sys_ws_operation action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <consumes>application/json</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_operation_uri/>
+        <enforce_acl>cf9d01d3e73003009d6247e603f6a990</enforce_acl>
+        <http_method>GET</http_method>
+        <name>CSDM Overview</name>
+        <operation_script><![CDATA[(function(request, response) {
+        try {
+          var TABLE_LABELS = {
+            'cmdb_ci_server': 'Server',
+            'cmdb_ci_computer': 'Computer',
+            'cmdb_ci_vm_instance': 'Virtual Machine',
+            'cmdb_ci_network_gear': 'Network Gear',
+            'cmdb_ci_storage_device': 'Storage Device',
+            'cmdb_ci_database_instance': 'Database Instance',
+            'cmn_location': 'Location',
+            'core_company': 'Company',
+            'cmn_department': 'Department',
+            'cmdb_ci_business_app': 'Business Application',
+            'cmdb_ci_appl': 'Application',
+            'cmdb_software_instance': 'Software Instance',
+            'cmdb_ci_spkg': 'Software Package',
+            'cmdb_ci_service_technical': 'Technical Service',
+            'cmdb_ci_service_auto': 'Application Service',
+            'cmdb_ci_service_discovered': 'Discovered Service',
+            'cmdb_ci_endpoint': 'Endpoint',
+            'cmdb_ci_service': 'Business Service',
+            'service_offering': 'Service Offering',
+            'sc_cat_item': 'Catalog Item',
+            'sc_request': 'Service Request',
+            'incident': 'Incident',
+            'change_request': 'Change Request'
+          };
+
+          var domains = {
+            foundation: { label: 'Foundation', tables: ['cmdb_ci_server','cmdb_ci_computer','cmdb_ci_vm_instance','cmdb_ci_network_gear','cmdb_ci_storage_device','cmdb_ci_database_instance','cmn_location','core_company','cmn_department'] },
+            design_application: { label: 'Design - Application Portfolio', tables: ['cmdb_ci_business_app','cmdb_ci_appl','cmdb_software_instance','cmdb_ci_spkg'] },
+            manage_technical: { label: 'Manage Technical Services', tables: ['cmdb_ci_service_technical','cmdb_ci_service_auto','cmdb_ci_service_discovered','cmdb_ci_endpoint'] },
+            manage_business: { label: 'Manage Business Services', tables: ['cmdb_ci_service','service_offering'] },
+            sell_consume: { label: 'Sell/Consume', tables: ['sc_cat_item','sc_request','incident','change_request'] }
+          };
+
+          var results = {};
+          var totalClasses = 0;
+          var populatedClasses = 0;
+
+          for (var key in domains) {
+            if (!domains.hasOwnProperty(key)) continue;
+            var d = domains[key];
+            results[key] = { label: d.label, classes: [], totalCount: d.tables.length, populatedCount: 0 };
+
+            for (var i = 0; i < d.tables.length; i++) {
+              var tableName = d.tables[i];
+              var count = 0;
+              var accessible = true;
+
+              try {
+                var testGr = new GlideRecord(tableName);
+                if (!testGr.isValid()) {
+                  count = -1;
+                  accessible = false;
+                } else {
+                  var ga = new GlideAggregate(tableName);
+                  ga.addAggregate('COUNT');
+                  ga.query();
+                  if (ga.next()) {
+                    count = parseInt(ga.getAggregate('COUNT'), 10) || 0;
+                  }
+                }
+              } catch(e) {
+                count = -1;
+                accessible = false;
+              }
+
+              totalClasses++;
+              if (count > 0) {
+                populatedClasses++;
+                results[key].populatedCount++;
+              }
+
+              var health = 'empty';
+              if (count > 10) health = 'good';
+              else if (count > 0) health = 'low';
+
+              results[key].classes.push({
+                table: tableName,
+                label: TABLE_LABELS[tableName] || tableName,
+                count: count,
+                populated: count > 0,
+                health: health,
+                accessible: accessible,
+                category: 'general'
+              });
+            }
+          }
+
+          // Risks - custom fields on CMDB tables
+          var risks = [];
+          var riskTables = ['cmdb_ci','cmdb_ci_server','cmdb_ci_appl','cmdb_ci_service'];
+          for (var t = 0; t < riskTables.length; t++) {
+            try {
+              var dictGr = new GlideRecord('sys_dictionary');
+              dictGr.addQuery('name', riskTables[t]);
+              dictGr.addQuery('element', 'STARTSWITH', 'u_');
+              dictGr.setLimit(10);
+              dictGr.query();
+              while (dictGr.next()) {
+                risks.push({
+                  type: 'custom_field',
+                  severity: 'medium',
+                  table: riskTables[t],
+                  field: dictGr.getValue('element') || '',
+                  description: 'Custom field on ' + riskTables[t] + ': ' + (dictGr.getValue('element') || ''),
+                  recommendation: 'Consider using extension tables instead of adding custom fields to core CMDB classes',
+                  isRisk: true
+                });
+              }
+            } catch(e) { /* skip */ }
+          }
+
+          // Check for custom business rules on CMDB
+          for (var br = 0; br < riskTables.length; br++) {
+            try {
+              var brGr = new GlideRecord('sys_script');
+              brGr.addQuery('collection', riskTables[br]);
+              brGr.addQuery('sys_scope', '!=', 'global');
+              brGr.addQuery('active', 'true');
+              brGr.setLimit(5);
+              brGr.query();
+              while (brGr.next()) {
+                risks.push({
+                  type: 'business_rule',
+                  severity: 'high',
+                  table: riskTables[br],
+                  field: brGr.getValue('name') || 'Unknown',
+                  description: 'Custom BR on ' + riskTables[br] + ': ' + (brGr.getValue('name') || ''),
+                  recommendation: 'Review for conflicts with CMDB Health, Discovery, and Service Mapping',
+                  isRisk: true
+                });
+              }
+            } catch(e) { /* skip */ }
+          }
+
+          var high = 0; var medium = 0; var low = 0;
+          for (var r = 0; r < risks.length; r++) {
+            if (risks[r].severity === 'high') high++;
+            else if (risks[r].severity === 'medium') medium++;
+            else low++;
+          }
+
+          // Relationships
+          var relStats = { total: 0, recommended: 0, non_recommended: 0 };
+          var typeDistribution = [];
+          var recTypes = ['Runs on::Runs','Hosted on::Hosts','Depends on::Used by','Contains::Contained by','Provides::Provided by'];
+
+          try {
+            var rtGr = new GlideAggregate('cmdb_rel_ci');
+            rtGr.addAggregate('COUNT');
+            rtGr.groupBy('type');
+            rtGr.orderByAggregate('COUNT', 'DESC');
+            rtGr.setLimit(15);
+            rtGr.query();
+            while (rtGr.next()) {
+              var rtName = rtGr.type.getDisplayValue() || 'Unknown';
+              var cnt = parseInt(rtGr.getAggregate('COUNT'), 10) || 0;
+              var isRec = false;
+              for (var rc = 0; rc < recTypes.length; rc++) {
+                if (rtName.indexOf(recTypes[rc].split('::')[0]) >= 0) { isRec = true; break; }
+              }
+              relStats.total += cnt;
+              if (isRec) relStats.recommended += cnt;
+              else relStats.non_recommended += cnt;
+              typeDistribution.push({ type_name: rtName, count: cnt, recommended: isRec });
+            }
+          } catch(e) { /* skip relationships if table inaccessible */ }
+
+          var coveragePercent = totalClasses > 0 ? Math.round((populatedClasses / totalClasses) * 100) : 0;
+          var riskScore = Math.max(0, 100 - (risks.length * 5));
+          var relScore = relStats.total > 0 ? Math.round((relStats.recommended / relStats.total) * 100) : 50;
+          var score = Math.round((coveragePercent * 0.4) + (riskScore * 0.3) + (relScore * 0.3));
+
+          var result = {
+            score: score,
+            scanTime: new GlideDateTime().getDisplayValue(),
+            population: {
+              domains: results,
+              summary: { totalClasses: totalClasses, populatedClasses: populatedClasses, coveragePercent: coveragePercent }
+            },
+            risks: {
+              risks: risks,
+              summary: { total: risks.length, high: high, medium: medium, low: low }
+            },
+            relationships: {
+              issues: [],
+              stats: relStats,
+              typeDistribution: typeDistribution,
+              recommendedTypes: recTypes
+            }
+          };
+
+          response.setStatus(200);
+          response.setBody(JSON.stringify(result));
+        } catch(ex) {
+          response.setStatus(200);
+          response.setBody(JSON.stringify({ error: 'Scan failed: ' + ex.message, score: 0 }));
+        }
+      })(request, response);]]></operation_script>
+        <operation_uri>/api/x_147805_csdmviz/csdm_explorer/overview</operation_uri>
+        <produces>application/json</produces>
+        <produces_customized>false</produces_customized>
+        <relative_path>/overview</relative_path>
+        <request_example/>
+        <requires_acl_authorization>true</requires_acl_authorization>
+        <requires_authentication>true</requires_authentication>
+        <requires_snc_internal_role>true</requires_snc_internal_role>
+        <short_description>Get full CSDM 5.0 compliance overview</short_description>
+        <support_trailing_slash>false</support_trailing_slash>
+        <sys_class_name>sys_ws_operation</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-05-18 06:52:52</sys_created_on>
+        <sys_id>0e99bd8bafd14e968ff0afe341ba342f</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>CSDM Overview</sys_name>
+        <sys_package display_value="CSDMViz" source="x_147805_csdmviz">1c9af66f83340350c07713e0deaad3c3</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="CSDMViz">1c9af66f83340350c07713e0deaad3c3</sys_scope>
+        <sys_update_name>sys_ws_operation_0e99bd8bafd14e968ff0afe341ba342f</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-05-18 06:52:52</sys_updated_on>
+        <web_service_definition display_value="CSDM 5.0 Explorer API">59998b3e3e4a4b1a8e6ec136e940c626</web_service_definition>
+        <web_service_version/>
+    </sys_ws_operation>
+</record_update>

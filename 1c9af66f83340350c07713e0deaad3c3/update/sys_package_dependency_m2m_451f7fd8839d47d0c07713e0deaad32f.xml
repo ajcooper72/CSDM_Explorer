@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_package_dependency_m2m">
+    <sys_package_dependency_m2m action="INSERT_OR_UPDATE">
+        <dependency display_value="Service Portfolio Management Core" source="com.snc.service_portfolio_core">94995cecf50403100a22c0b3dfa15147</dependency>
+        <min_version>1.1.0</min_version>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2026-06-02 05:43:43</sys_created_on>
+        <sys_id>451f7fd8839d47d0c07713e0deaad32f</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_package display_value="CSDMViz" source="x_147805_csdmviz">1c9af66f83340350c07713e0deaad3c3</sys_package>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2026-06-02 05:43:43</sys_updated_on>
+    </sys_package_dependency_m2m>
+</record_update>
